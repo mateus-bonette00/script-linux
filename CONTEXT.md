@@ -1,7 +1,7 @@
 # CONTEXT
 
 ## Objetivo deste arquivo
-Este arquivo resume o contexto atual do ambiente para continuar o trabalho quando voce estiver no notebook.
+Resumo rapido do ambiente atual para continuar o trabalho de qualquer maquina (principalmente no notebook).
 
 ## Ambiente atual
 - Desktop (servidor): `192.168.0.173`
@@ -14,43 +14,44 @@ Este arquivo resume o contexto atual do ambiente para continuar o trabalho quand
 - OpenClaw no desktop: instalado
 - Tunnel OpenClaw no notebook (`openclaw-tunnel.service`): ativo
 
-## Caminho padrao dos apps (DECISAO ATUAL)
-Nao usar `/srv/apps` para os apps deste fluxo.
+## Decisao operacional atual (PADRAO OFICIAL)
+Nao usar `/srv/apps` neste fluxo.
 
-Usar sempre:
-- `/home/bonette/Documentos/apps/meuapp`
+Usar sempre repositorios Git em:
+- `/home/bonette/Documentos/apps/<nome-do-repositorio>`
 
-Estrutura esperada:
-```text
-/home/bonette/Documentos/apps/meuapp/
-  .env
-  docker-compose.yml
-  /backend
-  /frontend
-```
+Cada app deve ter no repo:
+- `docker-compose.yml`
+- `.env.example`
+- `scripts/deploy.sh`
+- `scripts/update.sh`
+
+No desktop, o `.env` real fica no clone local e nao vai para Git.
 
 ## Fluxo padrao de deploy
-No desktop:
+Primeiro deploy (desktop):
 ```bash
-cd /home/bonette/Documentos/apps/meuapp
-docker compose up -d --build
-docker compose ps
-docker compose logs -f --tail=100
+cd /home/bonette/Documentos/apps
+git clone URL_DO_REPOSITORIO.git
+cd <nome-do-repositorio>
+cp .env.example .env
+nano .env
+chmod 600 .env
+chmod +x scripts/deploy.sh scripts/update.sh
+./scripts/deploy.sh
 ```
 
-Para atualizar codigo:
+Atualizacao futura (desktop):
 ```bash
-cd /home/bonette/Documentos/apps/meuapp
-git pull --ff-only
-docker compose up -d --build
-docker compose ps
+cd /home/bonette/Documentos/apps/<nome-do-repositorio>
+./scripts/update.sh
 ```
 
 ## Caddy (exposicao local na rede)
 Arquivo:
 - `/etc/caddy/Caddyfile`
 
-Modelo:
+Modelo atual:
 ```caddy
 :80 {
   encode gzip
@@ -65,7 +66,7 @@ Modelo:
 }
 ```
 
-Aplicar alteracoes:
+Aplicar:
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl reload caddy
@@ -78,13 +79,13 @@ Arquitetura:
 - Notebook conecta no gateway via tunnel SSH
 - Cliente do notebook usa `gateway.mode=remote`
 
-Verificacao rapida (desktop):
+Verificacao (desktop):
 ```bash
 openclaw gateway status
 openclaw logs --follow
 ```
 
-Verificacao rapida (notebook):
+Verificacao (notebook):
 ```bash
 systemctl --user status openclaw-tunnel.service --no-pager
 openclaw health
@@ -92,24 +93,13 @@ openclaw status
 curl -I http://127.0.0.1:18789
 ```
 
-## Comandos de saude diaria
-Desktop:
-```bash
-uptime
-df -h
-free -m
-sudo systemctl status ssh --no-pager
-sudo systemctl status caddy --no-pager
-docker ps
-```
-
-Notebook:
-```bash
-ssh srv-desktop 'echo SSH_OK'
-systemctl --user status openclaw-tunnel.service --no-pager
-openclaw status
-```
+## Template pronto neste projeto
+Arquivos base para copiar para um novo repo de app:
+- `templates/app-repo/.env.example`
+- `templates/app-repo/.gitignore`
+- `templates/app-repo/docker-compose.yml`
+- `templates/app-repo/scripts/deploy.sh`
+- `templates/app-repo/scripts/update.sh`
 
 ## Referencia principal
-Guia atualizado:
 - `GUIA-FACIL-INICIANTE-HOSPEDAR-APP-E-OPENCLAW.md`
