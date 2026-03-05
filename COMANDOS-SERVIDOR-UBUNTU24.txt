@@ -1,0 +1,159 @@
+COMANDOS USADOS - SERVIDOR UBUNTU 24 + OPENCLAW
+
+Resumo dos comandos executados e o que cada um faz.
+
+[1] SSH NOTEBOOK -> SERVIDOR
+- ssh -i ~/.ssh/id_ed25519_srvdesktop opsadmin@192.168.0.173
+  Conecta no servidor com chave SSH.
+- ssh srv-desktop
+  Conecta usando alias de ~/.ssh/config.
+- ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_srvdesktop -C "notebook->srv-desktop"
+  Gera chave SSH no notebook.
+- ssh-copy-id -i ~/.ssh/id_ed25519_srvdesktop.pub opsadmin@192.168.0.173
+  Copia chave publica para login sem senha.
+- nano ~/.ssh/config
+  Configura alias SSH.
+
+[2] UFW
+- sudo ufw default deny incoming
+  Bloqueia entrada por padrao.
+- sudo ufw default allow outgoing
+  Libera saida por padrao.
+- sudo ufw allow 22/tcp
+  Libera SSH.
+- sudo ufw allow 80/tcp
+  Libera HTTP.
+- sudo ufw allow 443/tcp
+  Libera HTTPS.
+- sudo ufw enable
+  Ativa firewall.
+- sudo ufw status verbose
+  Mostra politicas/regras.
+- sudo ufw reload
+  Recarrega regras.
+
+[3] FAIL2BAN
+- sudo systemctl enable --now fail2ban
+  Ativa fail2ban.
+- sudo nano /etc/fail2ban/jail.d/sshd.local
+  Ajusta regras do SSH.
+- sudo systemctl restart fail2ban
+  Reinicia fail2ban.
+- sudo fail2ban-client status sshd
+  Mostra status da jail SSH.
+- sudo fail2ban-client set sshd unbanip 192.168.0.165
+  Remove ban do IP do notebook.
+
+[4] UNATTENDED UPGRADES
+- sudo dpkg-reconfigure --priority=low unattended-upgrades
+  Habilita updates automaticos de seguranca.
+- sudo systemctl status unattended-upgrades --no-pager
+  Verifica se esta ativo.
+
+[5] DOCKER + COMPOSE
+- sudo apt install -y ca-certificates curl gnupg
+  Dependencias para repo Docker.
+- sudo install -m 0755 -d /etc/apt/keyrings
+  Cria pasta de chaves APT.
+- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc >/dev/null
+  Importa chave Docker.
+- echo "deb ..." | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+  Adiciona repo Docker.
+- sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  Instala Docker + Compose.
+- sudo systemctl enable --now docker
+  Ativa Docker no boot.
+- sudo usermod -aG docker opsadmin
+  Libera uso sem sudo.
+- newgrp docker
+  Recarrega grupo da sessao.
+- docker run --rm hello-world
+  Teste funcional.
+- docker version / docker compose version
+  Mostra versoes.
+
+[6] ESTRUTURA DE PASTAS
+- sudo mkdir -p /srv/apps /srv/openclaw /srv/backups /var/log/apps
+  Cria estrutura padrao.
+- sudo chown -R opsadmin:opsadmin /srv/apps /srv/openclaw /srv/backups
+  Ajusta dono das pastas.
+- sudo chmod -R 775 /srv/apps /srv/openclaw /srv/backups
+  Ajusta permissoes.
+
+[7] CADDY
+- sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+  Dependencias Caddy.
+- curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  Chave GPG Caddy.
+- curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+  Repo Caddy.
+- sudo apt install -y caddy
+  Instala Caddy.
+- sudo nano /etc/caddy/Caddyfile
+  Edita proxy.
+- sudo caddy validate --config /etc/caddy/Caddyfile
+  Valida arquivo.
+- sudo systemctl restart caddy
+  Reinicia servico.
+- curl -I http://127.0.0.1
+  Testa proxy local.
+
+[8] MONITORAMENTO / LOGS
+- uptime / df -h / free -m / ss -tulpn
+  Verificacao rapida de saude do servidor.
+- sudo journalctl -u ssh -n 100 --no-pager
+  Logs SSH.
+- sudo journalctl -u caddy -n 100 --no-pager
+  Logs Caddy.
+
+[9] LOGROTATE
+- sudo nano /etc/logrotate.d/apps-custom
+  Regra custom para /var/log/apps/*.log.
+- sudo logrotate -d /etc/logrotate.conf
+  Teste em modo debug.
+
+[10] BACKUP + CRON
+- sudo nano /usr/local/bin/backup-server.sh
+  Cria script de backup com rsync.
+- sudo chmod +x /usr/local/bin/backup-server.sh
+  Torna executavel.
+- sudo /usr/local/bin/backup-server.sh
+  Executa backup manual.
+- sudo crontab -e
+  Agenda backup diario.
+- 0 2 * * * /usr/local/bin/backup-server.sh >> /var/log/backup-server.log 2>&1
+  Linha de cron usada.
+- sudo crontab -l
+  Confirma agendamento.
+
+[11] OPENCLAW NO DESKTOP (SERVIDOR)
+- ./setup-openclaw-server.sh --port 18789 --enable-linger --skip-onboard --force-token
+  Instala/configura gateway OpenClaw local.
+- openclaw gateway status
+  Status do gateway.
+- openclaw config get gateway.auth.token
+  Token (CLI pode mascarar).
+- jq -r '.gateway.auth.token // empty' ~/.openclaw/openclaw.json
+  Token real do arquivo.
+- openclaw doctor --generate-gateway-token
+  Gera token novo.
+
+[12] OPENCLAW NO NOTEBOOK (TUNNEL)
+- ./setup-openclaw-client-tunnel.sh --server opsadmin@192.168.0.173 --alias openclaw-server --identity-file ~/.ssh/id_ed25519_srvdesktop --no-copy-key --configure-openclaw-remote --remote-token "<TOKEN>"
+  Configura tunnel SSH + cliente remoto.
+- ./setup-openclaw-client-tunnel-service.sh --host-alias openclaw-server --enable-linger
+  Cria servico user-level do tunnel.
+- systemctl --user restart openclaw-tunnel.service
+  Reinicia tunnel.
+- systemctl --user status openclaw-tunnel.service --no-pager
+  Verifica se esta ativo.
+- journalctl --user -u openclaw-tunnel.service -n 60 --no-pager
+  Logs do tunnel.
+
+[13] VALIDACAO FINAL
+- ssh -o ConnectTimeout=5 -i ~/.ssh/id_ed25519_srvdesktop opsadmin@192.168.0.173 'echo SSH_OK'
+  SSH OK apos ajustes.
+- openclaw status
+  Mostrou gateway remoto alcancavel.
+- curl -I http://127.0.0.1:18789
+  Retornou HTTP/1.1 200 OK.
