@@ -17,7 +17,7 @@ Ou seja: a base do servidor ja esta pronta.
 
 ---
 
-## 1) Mapa mental simples (para nunca se perder)
+## 1) Mapa mental simples (**para** nunca se perder)
 
 Pense assim:
 
@@ -26,7 +26,7 @@ Pense assim:
 
 Quando voce "hospeda", significa:
 
-1. Colocar projeto no desktop (pasta em `/srv/apps/...`)
+1. Colocar projeto no desktop (pasta em `/home/bonette/Documentos/apps/...`)
 2. Subir com Docker Compose
 3. Expor com Caddy (porta 80)
 4. Manter banco em volume persistente
@@ -39,7 +39,7 @@ Quando voce "hospeda", significa:
 Use sempre esta estrutura no desktop:
 
 ```text
-/srv/apps/meuapp/
+/home/bonette/Documentos/apps/meuapp/
   .env
   docker-compose.yml
   /backend
@@ -49,9 +49,8 @@ Use sempre esta estrutura no desktop:
 ### 2.1 Criar pasta do app no desktop
 
 ```bash
-sudo mkdir -p /srv/apps/meuapp
-sudo chown -R opsadmin:opsadmin /srv/apps/meuapp
-cd /srv/apps/meuapp
+mkdir -p /home/bonette/Documentos/apps/meuapp
+cd /home/bonette/Documentos/apps/meuapp
 ```
 
 ### 2.2 Criar `.env`
@@ -152,7 +151,7 @@ Observacao importante:
 ### 2.4 Subir o app
 
 ```bash
-cd /srv/apps/meuapp
+cd /home/bonette/Documentos/apps/meuapp
 docker compose up -d --build
 docker compose ps
 docker compose logs -f --tail=100
@@ -213,7 +212,7 @@ Teste no notebook (browser):
 Toda vez que atualizar codigo:
 
 ```bash
-cd /srv/apps/meuapp
+cd /home/bonette/Documentos/apps/meuapp
 git pull --ff-only
 docker compose up -d --build
 docker compose ps
@@ -325,7 +324,7 @@ openclaw status
 
 ## 8) Checklist rapido (sempre antes de publicar app)
 
-- [ ] App esta em `/srv/apps/meuapp`
+- [ ] App esta em `/home/bonette/Documentos/apps/meuapp`
 - [ ] `.env` criado e `chmod 600 .env`
 - [ ] `docker compose up -d --build` sem erro
 - [ ] `docker compose ps` com tudo `Up`
